@@ -130,7 +130,7 @@ class PurePursuit(Node):
         return intersection
 
 
-    def find_lookahead_point(self, closest_point, segment_idx):
+    def find_lookahead_point(self, car_pos, segment_idx):
         '''
         Finds the lookahead point on the trajectory.
         '''
@@ -138,7 +138,7 @@ class PurePursuit(Node):
         for i in range(segment_idx, len(points) - 1):
             p1 = points[i]
             p2 = points[i+1]
-            intersection = self.circle_line_intersection(closest_point, self.lookahead, p1, p2)
+            intersection = self.circle_line_intersection(car_pos, self.lookahead, p1, p2)
             if intersection is not None:
                 return intersection
         return points[-1]
