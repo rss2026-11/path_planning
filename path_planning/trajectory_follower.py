@@ -50,7 +50,7 @@ class PurePursuit(Node):
 
         car_pos = np.array([dx, dy])
         closest_point, segment_idx = self.find_nearest_point_on_trajectory(car_pos)
-        lookahead_point = self.find_lookahead_point(closest_point, segment_idx)
+        lookahead_point = self.find_lookahead_point(car_pos, segment_idx)
 
         #Translates from map frame to car body frame
         lookahead_x = lookahead_point[0]
