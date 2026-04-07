@@ -20,8 +20,8 @@ class PurePursuit(Node):
         self.odom_topic = self.get_parameter('odom_topic').get_parameter_value().string_value
         self.drive_topic = self.get_parameter('drive_topic').get_parameter_value().string_value
 
-        self.lookahead = 1.0
-        self.speed = 0  # FILL IN #
+        self.lookahead = 1.0 # Need to play around with
+        self.speed = 1.0  # FILL IN # Need to play around with
         self.wheelbase_length = 0  # FILL IN #
 
         self.initialized_traj = False
@@ -51,6 +51,22 @@ class PurePursuit(Node):
         car_pos = np.array([dx, dy])
         closest_point, segment_idx = self.find_nearest_point_on_trajectory(car_pos)
         lookahead_point = self.find_lookahead_point(closest_point, segment_idx)
+        lookahead_x = lookahead_point[0]
+        lookahead_y = lookahead_point[1]
+
+        translated_x = lookahead_x - car_pos[0]
+        translated_y = lookahead_y - car_pos[1]
+
+        local_x = translated_x * np.cos(dtheta) + translated_y * np.sin(dtheta)
+        local_y = translated_x * np.sin(dtheta) - translated_y * np.cos(dtheta)
+
+        steering_angle = np.arctan2(2 * local_y * self.wheelbase_length, self.lookahead**2)
+
+        drive_msg = AckermannDriveStamped()
+        drive_msg.drive.speed = self.speed
+        drive_msg.drive.steering_angle = steering_angle
+        self.drive_pub.publish(drive_msg)
+
 
     def find_nearest_point_on_trajectory(self, pos):
         """
