@@ -51,6 +51,8 @@ class PurePursuit(Node):
         car_pos = np.array([dx, dy])
         closest_point, segment_idx = self.find_nearest_point_on_trajectory(car_pos)
         lookahead_point = self.find_lookahead_point(closest_point, segment_idx)
+
+        #Translates from map frame to car body frame
         lookahead_x = lookahead_point[0]
         lookahead_y = lookahead_point[1]
 
@@ -58,7 +60,7 @@ class PurePursuit(Node):
         translated_y = lookahead_y - car_pos[1]
 
         local_x = translated_x * np.cos(dtheta) + translated_y * np.sin(dtheta)
-        local_y = translated_x * np.sin(dtheta) - translated_y * np.cos(dtheta)
+        local_y = -translated_x * np.sin(dtheta) + translated_y * np.cos(dtheta)
 
         steering_angle = np.arctan2(2 * local_y * self.wheelbase_length, self.lookahead**2)
 
