@@ -39,7 +39,10 @@ class PurePursuit(Node):
                                                1)
 
     def pose_callback(self, odometry_msg):
-        raise NotImplementedError
+
+        dx = odometry_msg.twist.twist.linear.x
+        dy = odometry_msg.twist.twist.linear.y
+        dtheta = odometry_msg.twist.twist.angular.z
 
     def trajectory_callback(self, msg):
         self.get_logger().info(f"Receiving new trajectory {len(msg.poses)} points")
