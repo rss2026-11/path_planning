@@ -40,6 +40,8 @@ class PurePursuit(Node):
         self.drive_pub = self.create_publisher(AckermannDriveStamped,
                                                self.drive_topic,
                                                1)
+        
+        self.at_end = False
 
     def euler_from_quaternion(self, x, y, z, w):
         """ Convert quaternion to euler yaw angle """
@@ -48,7 +50,7 @@ class PurePursuit(Node):
         return math.atan2(t3, t4)
 
     def pose_callback(self, odometry_msg):
-        if not self.initialized_traj or len(self.trajectory.points) < 2:
+        if not self.initialized_traj or len(self.trajectory.points) < 2 or self.at_end:
             return
 
         # 1. Extract Car Position and Yaw
@@ -128,7 +130,10 @@ class PurePursuit(Node):
 
         # In case we're at the end of the path and the lookahead circle misses the end
         if lookahead_point is None:
-            lookahead_point = path_pts[-1]
+            # lookahead_point = path_pts[-1]
+            self.at_end = True
+            self.get_logger().info(f"Found end point... stopping.")
+
 
         # Transform Lookahead Point to Car's Local Frame
         dx = lookahead_point[0] - car_x
@@ -148,9 +153,13 @@ class PurePursuit(Node):
         drive_msg = AckermannDriveStamped()
         # drive_msg.header.stamp = self.get_clock().now().to_msg()
         # drive_msg.header.frame_id = "base_link"
-        
-        drive_msg.drive.steering_angle = steering_angle
-        drive_msg.drive.speed = float(self.speed)
+
+        if self.at_end:
+            drive_msg.drive.steering_angle = 0.0
+            drive_msg.drive.speed = 0.0
+        else:
+            drive_msg.drive.steering_angle = steering_angle
+            drive_msg.drive.speed = float(self.speed)
 
         self.drive_pub.publish(drive_msg)
 
