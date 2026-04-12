@@ -93,72 +93,40 @@ class PurePursuit(Node):
         # Find index of the absolute closest segment
         closest_idx = np.argmin(distances)
 
-        # # Find the Lookahead Point (Intersection of circle and line segment)
-        # lookahead_point = None
-        # r = self.lookahead
-        # Q = car_pos
-
-        # # Start searching forward from the closest segment
-        # for i in range(closest_idx, len(path_pts) - 1):
-        #     P1 = path_pts[i]
-        #     P2 = path_pts[i+1]
-        #     V_seg = P2 - P1
-
-        #     a = np.dot(V_seg, V_seg)
-        #     b = 2 * np.dot(V_seg, P1 - Q)
-        #     c = np.dot(P1, P1) + np.dot(Q, Q) - 2 * np.dot(P1, Q) - r**2
-
-        #     disc = b**2 - 4 * a * c
-
-        #     # If discriminant is >= 0, there is an intersection
-        #     if disc >= 0:
-        #         sqrt_disc = math.sqrt(disc)
-        #         t1 = (-b + sqrt_disc) / (2 * a)
-        #         t2 = (-b - sqrt_disc) / (2 * a)
-
-        #         valid_t = []
-        #         if 0 <= t1 <= 1:
-        #             valid_t.append(t1)
-        #         if 0 <= t2 <= 1:
-        #             valid_t.append(t2)
-
-        #         if valid_t:
-        #             # Choose the larger t so we pick the point further ahead on the segment
-        #             t_intersect = max(valid_t)
-        #             lookahead_point = P1 + t_intersect * V_seg
-        #             break 
-
+        # Find the Lookahead Point (Intersection of circle and line segment)
         lookahead_point = None
         r = self.lookahead
         Q = car_pos
 
-        # Search forward along the path starting from the closest index
+        # Start searching forward from the closest segment
         for i in range(closest_idx, len(path_pts) - 1):
             P1 = path_pts[i]
             P2 = path_pts[i+1]
-            d = P2 - P1
-            f = P1 - Q
+            V_seg = P2 - P1
 
-            a = np.dot(d, d)
-            b = 2 * np.dot(f, d)
-            c = np.dot(f, f) - r*r
+            a = np.dot(V_seg, V_seg)
+            b = 2 * np.dot(V_seg, P1 - Q)
+            c = np.dot(P1, P1) + np.dot(Q, Q) - 2 * np.dot(P1, Q) - r**2
 
-            disc = b*b - 4*a*c
-            if disc < 0:
-                continue  # no intersection
+            disc = b**2 - 4 * a * c
 
-            sqrt_disc = math.sqrt(disc)
-            t1 = (-b - sqrt_disc) / (2*a)
-            t2 = (-b + sqrt_disc) / (2*a)
+            # If discriminant is >= 0, there is an intersection
+            if disc >= 0:
+                sqrt_disc = math.sqrt(disc)
+                t1 = (-b + sqrt_disc) / (2 * a)
+                t2 = (-b - sqrt_disc) / (2 * a)
 
-            # We want the FIRST intersection ahead on the segment
-            for t in [t1, t2]:
-                if 0 <= t <= 1:
-                    lookahead_point = P1 + t * d
-                    break
+                valid_t = []
+                if 0 <= t1 <= 1:
+                    valid_t.append(t1)
+                if 0 <= t2 <= 1:
+                    valid_t.append(t2)
 
-            if lookahead_point is not None:
-                break
+                if valid_t:
+                    # Choose the larger t so we pick the point further ahead on the segment
+                    t_intersect = max(valid_t)
+                    lookahead_point = P1 + t_intersect * V_seg
+                    break 
 
 
         # In case we're at the end of the path and the lookahead circle misses the end
@@ -167,8 +135,12 @@ class PurePursuit(Node):
         #     self.at_end = True
         #     self.get_logger().info(f"Found end point... stopping.")
 
+        # if lookahead_point is None:
+        #     lookahead_point = path_pts[-1]
         if lookahead_point is None:
-            lookahead_point = path_pts[-1]
+            # pick the nearest point ahead on the path
+            lookahead_point = path_pts[min(closest_idx + 1, len(path_pts)-1)]
+
 
         # Check if we're close enough to the goal to stop
         dist_to_goal = np.linalg.norm(car_pos - path_pts[-1])
@@ -182,17 +154,60 @@ class PurePursuit(Node):
             return
 
 
-        # Transform Lookahead Point to Car's Local Frame
+        # # Transform Lookahead Point to Car's Local Frame
+        # dx = lookahead_point[0] - car_x
+        # dy = lookahead_point[1] - car_y
+
+        # # Rotate by -yaw to convert to local frame
+        # local_y = -dx * math.sin(yaw) + dy * math.cos(yaw)
+
+        # # Calculate Steering Angle using Pure Pursuit Equation
+        # # Curvature formula: 2 * y_local / (L_d ^ 2)
+        # curvature = (2.0 * local_y) / (self.lookahead ** 2)
+        # steering_angle = math.atan(curvature * self.wheelbase_length)
+
+        # Transform lookahead point into car frame
+        # --- Compute errors relative to lookahead point ---
         dx = lookahead_point[0] - car_x
         dy = lookahead_point[1] - car_y
 
-        # Rotate by -yaw to convert to local frame
+        # Transform into car frame
+        local_x =  dx * math.cos(yaw) + dy * math.sin(yaw)
         local_y = -dx * math.sin(yaw) + dy * math.cos(yaw)
 
-        # Calculate Steering Angle using Pure Pursuit Equation
-        # Curvature formula: 2 * y_local / (L_d ^ 2)
-        curvature = (2.0 * local_y) / (self.lookahead ** 2)
-        steering_angle = math.atan(curvature * self.wheelbase_length)
+        # Angle error: how far the lookahead point is off the car's forward axis
+        angle_error = math.atan2(local_y, local_x)
+
+        # Distance error: how far the lookahead point is from the car
+        distance_error = math.hypot(local_x, local_y)
+
+        # Gains similar to parking controller
+        # You can tune these
+        large_angle_threshold = 0.6     # rad
+        close_distance_threshold = 0.5  # meters
+
+        # Default gains
+        k_angle_far = 1.2
+        k_angle_near = 2.5
+        k_speed = 1.0
+
+        # Adjust gain based on angle and distance
+        if abs(angle_error) > large_angle_threshold and distance_error < close_distance_threshold:
+            # Lookahead is sharply off to the side → turn first
+            steering_angle = -angle_error * k_angle_near
+            speed = 0.5
+        elif distance_error < 0.3:
+            # Close enough → slow down
+            steering_angle = angle_error * k_angle_near
+            speed = 0.0
+        else:
+            # Normal tracking
+            steering_angle = angle_error * k_angle_far
+            speed = np.clip(distance_error * k_speed, 0.5, 2.0)
+
+        # clip to car limits
+        max_steer = 0.4
+        steering_angle = np.clip(steering_angle, -max_steer, max_steer)
 
         # self.get_logger().info(f"Steering angle: {steering_angle}")
 
