@@ -23,7 +23,7 @@ class PurePursuit(Node):
 
         # FILL IN #
         self.lookahead = 1.0        # Lookahead distance in meters
-        self.speed = 2.0            # Driving speed in m/s
+        self.speed = 1.0            # Driving speed in m/s
         self.wheelbase_length = 0.33 # Typical 1/10th scale racecar wheelbase in meters
 
         self.initialized_traj = False
@@ -40,7 +40,7 @@ class PurePursuit(Node):
         self.drive_pub = self.create_publisher(AckermannDriveStamped,
                                                self.drive_topic,
                                                1)
-        
+
         self.at_end = False
 
     def euler_from_quaternion(self, x, y, z, w):
@@ -60,7 +60,7 @@ class PurePursuit(Node):
         qy = odometry_msg.pose.pose.orientation.y
         qz = odometry_msg.pose.pose.orientation.z
         qw = odometry_msg.pose.pose.orientation.w
-        
+
         yaw = self.euler_from_quaternion(qx, qy, qz, qw)
         car_pos = np.array([car_x, car_y])
         # self.get_logger().info(f"car_pos: {car_pos}")
@@ -75,100 +75,71 @@ class PurePursuit(Node):
         # Vectorized nearest segment search
         segments_start = path_pts[:-1]
         segments_end = path_pts[1:]
-        
+
         V = segments_end - segments_start
         W = car_pos - segments_start
-        
+
         l2 = np.sum(V**2, axis=1)
         l2 = np.where(l2 == 0, 1e-6, l2)  # Avoid division by zero
-        
+
         # Calculate parameterized t and clamp between 0 and 1
         t_proj = np.sum(W * V, axis=1) / l2
         t_proj = np.clip(t_proj, 0.0, 1.0)
-        
+
         # Find closest point on each segment and the distance to the car
         projections = segments_start + t_proj[:, np.newaxis] * V
         distances = np.linalg.norm(car_pos - projections, axis=1)
-        
+
         # Find index of the absolute closest segment
         closest_idx = np.argmin(distances)
 
         # # Find the Lookahead Point (Intersection of circle and line segment)
-        # lookahead_point = None
-        # r = self.lookahead
-        # Q = car_pos
-
-        # # Start searching forward from the closest segment
-        # for i in range(closest_idx, len(path_pts) - 1):
-        #     P1 = path_pts[i]
-        #     P2 = path_pts[i+1]
-        #     V_seg = P2 - P1
-
-        #     a = np.dot(V_seg, V_seg)
-        #     b = 2 * np.dot(V_seg, P1 - Q)
-        #     c = np.dot(P1, P1) + np.dot(Q, Q) - 2 * np.dot(P1, Q) - r**2
-
-        #     disc = b**2 - 4 * a * c
-
-        #     # If discriminant is >= 0, there is an intersection
-        #     if disc >= 0:
-        #         sqrt_disc = math.sqrt(disc)
-        #         t1 = (-b + sqrt_disc) / (2 * a)
-        #         t2 = (-b - sqrt_disc) / (2 * a)
-
-        #         valid_t = []
-        #         if 0 <= t1 <= 1:
-        #             valid_t.append(t1)
-        #         if 0 <= t2 <= 1:
-        #             valid_t.append(t2)
-
-        #         if valid_t:
-        #             # Choose the larger t so we pick the point further ahead on the segment
-        #             t_intersect = max(valid_t)
-        #             lookahead_point = P1 + t_intersect * V_seg
-        #             break 
-
         lookahead_point = None
         r = self.lookahead
         Q = car_pos
 
-        # Search forward along the path starting from the closest index
+        # # Start searching forward from the closest segment
         for i in range(closest_idx, len(path_pts) - 1):
             P1 = path_pts[i]
             P2 = path_pts[i+1]
-            d = P2 - P1
-            f = P1 - Q
+            V_seg = P2 - P1
 
-            a = np.dot(d, d)
-            b = 2 * np.dot(f, d)
-            c = np.dot(f, f) - r*r
+            a = np.dot(V_seg, V_seg)
+            b = 2 * np.dot(V_seg, P1 - Q)
+            c = np.dot(P1, P1) + np.dot(Q, Q) - 2 * np.dot(P1, Q) - r**2
 
-            disc = b*b - 4*a*c
-            if disc < 0:
-                continue  # no intersection
+            disc = b**2 - 4 * a * c
 
-            sqrt_disc = math.sqrt(disc)
-            t1 = (-b - sqrt_disc) / (2*a)
-            t2 = (-b + sqrt_disc) / (2*a)
+            # If discriminant is >= 0, there is an intersection
+            if disc >= 0:
+                sqrt_disc = math.sqrt(disc)
+                t1 = (-b + sqrt_disc) / (2 * a)
+                t2 = (-b - sqrt_disc) / (2 * a)
 
-            # We want the FIRST intersection ahead on the segment
-            for t in [t1, t2]:
-                if 0 <= t <= 1:
-                    lookahead_point = P1 + t * d
+                valid_t = []
+                if 0 <= t1 <= 1:
+                    valid_t.append(t1)
+                if 0 <= t2 <= 1:
+                    valid_t.append(t2)
+
+                if valid_t:
+                    # Choose the larger t so we pick the point further ahead on the segment
+                    t_intersect = max(valid_t)
+                    lookahead_point = P1 + t_intersect * V_seg
                     break
 
-            if lookahead_point is not None:
-                break
+
 
 
         # In case we're at the end of the path and the lookahead circle misses the end
-        # if lookahead_point is None:
-        #     # lookahead_point = path_pts[-1]
-        #     self.at_end = True
-        #     self.get_logger().info(f"Found end point... stopping.")
-
         if lookahead_point is None:
-            lookahead_point = path_pts[-1]
+            if distances[closest_idx] > self.lookahead:
+                # Recover by aiming at the closest point on the path instead of ignoring it.
+                lookahead_point = projections[closest_idx]
+            else:
+                self.at_end = True
+                self.get_logger().info(f"Found end point... stopping.")
+                lookahead_point = path_pts[-1]
 
         # Check if we're close enough to the goal to stop
         dist_to_goal = np.linalg.norm(car_pos - path_pts[-1])
