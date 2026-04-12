@@ -117,6 +117,35 @@ class PathPlan(Node):
             if self.dilated_map[v, u]:
                 return False
         return True
+    
+    def resample_path(self, path, spacing=0.1):
+        new_pts = [path[0]]
+        dist_acc = 0.0
+        for i in range(1, len(path)):
+            p0 = np.array(path[i-1])
+            p1 = np.array(path[i])
+            seg = np.linalg.norm(p1 - p0)
+            if seg < 1e-6:
+                continue
+            direction = (p1 - p0) / seg
+            while dist_acc + spacing <= seg:
+                new_pts.append((p0 + (dist_acc + spacing) * direction).tolist())
+                dist_acc += spacing
+            dist_acc = (dist_acc + spacing) - seg
+        return new_pts
+
+    def smooth_path(self, path, iterations=3):
+        for _ in range(iterations):
+            new = []
+            for i in range(len(path)-1):
+                p0 = np.array(path[i])
+                p1 = np.array(path[i+1])
+                Q = 0.75*p0 + 0.25*p1
+                R = 0.25*p0 + 0.75*p1
+                new.extend([Q.tolist(), R.tolist()])
+            path = new
+        return path
+
 
     def plan_path(self, start_point, end_point, map):
         t0 = time.time()
@@ -196,6 +225,9 @@ class PathPlan(Node):
             idx = parent[idx]
         path.reverse()
 
+        path = self.resample_path(path, spacing=0.1)
+        path = self.smooth_path(path)
+
         # Publish
         self.trajectory.clear()
         for pt in path:
@@ -203,6 +235,7 @@ class PathPlan(Node):
         self.traj_pub.publish(self.trajectory.toPoseArray())
         self.trajectory.publish_viz()
 
+    
 
 def main(args=None):
     rclpy.init(args=args)
