@@ -93,40 +93,73 @@ class PurePursuit(Node):
         # Find index of the absolute closest segment
         closest_idx = np.argmin(distances)
 
-        # Find the Lookahead Point (Intersection of circle and line segment)
+        # # Find the Lookahead Point (Intersection of circle and line segment)
+        # lookahead_point = None
+        # r = self.lookahead
+        # Q = car_pos
+
+        # # Start searching forward from the closest segment
+        # for i in range(closest_idx, len(path_pts) - 1):
+        #     P1 = path_pts[i]
+        #     P2 = path_pts[i+1]
+        #     V_seg = P2 - P1
+
+        #     a = np.dot(V_seg, V_seg)
+        #     b = 2 * np.dot(V_seg, P1 - Q)
+        #     c = np.dot(P1, P1) + np.dot(Q, Q) - 2 * np.dot(P1, Q) - r**2
+
+        #     disc = b**2 - 4 * a * c
+
+        #     # If discriminant is >= 0, there is an intersection
+        #     if disc >= 0:
+        #         sqrt_disc = math.sqrt(disc)
+        #         t1 = (-b + sqrt_disc) / (2 * a)
+        #         t2 = (-b - sqrt_disc) / (2 * a)
+
+        #         valid_t = []
+        #         if 0 <= t1 <= 1:
+        #             valid_t.append(t1)
+        #         if 0 <= t2 <= 1:
+        #             valid_t.append(t2)
+
+        #         if valid_t:
+        #             # Choose the larger t so we pick the point further ahead on the segment
+        #             t_intersect = max(valid_t)
+        #             lookahead_point = P1 + t_intersect * V_seg
+        #             break 
+
         lookahead_point = None
         r = self.lookahead
         Q = car_pos
 
-        # Start searching forward from the closest segment
+        # Search forward along the path starting from the closest index
         for i in range(closest_idx, len(path_pts) - 1):
             P1 = path_pts[i]
             P2 = path_pts[i+1]
-            V_seg = P2 - P1
+            d = P2 - P1
+            f = P1 - Q
 
-            a = np.dot(V_seg, V_seg)
-            b = 2 * np.dot(V_seg, P1 - Q)
-            c = np.dot(P1, P1) + np.dot(Q, Q) - 2 * np.dot(P1, Q) - r**2
+            a = np.dot(d, d)
+            b = 2 * np.dot(f, d)
+            c = np.dot(f, f) - r*r
 
-            disc = b**2 - 4 * a * c
+            disc = b*b - 4*a*c
+            if disc < 0:
+                continue  # no intersection
 
-            # If discriminant is >= 0, there is an intersection
-            if disc >= 0:
-                sqrt_disc = math.sqrt(disc)
-                t1 = (-b + sqrt_disc) / (2 * a)
-                t2 = (-b - sqrt_disc) / (2 * a)
+            sqrt_disc = math.sqrt(disc)
+            t1 = (-b - sqrt_disc) / (2*a)
+            t2 = (-b + sqrt_disc) / (2*a)
 
-                valid_t = []
-                if 0 <= t1 <= 1:
-                    valid_t.append(t1)
-                if 0 <= t2 <= 1:
-                    valid_t.append(t2)
+            # We want the FIRST intersection ahead on the segment
+            for t in [t1, t2]:
+                if 0 <= t <= 1:
+                    lookahead_point = P1 + t * d
+                    break
 
-                if valid_t:
-                    # Choose the larger t so we pick the point further ahead on the segment
-                    t_intersect = max(valid_t)
-                    lookahead_point = P1 + t_intersect * V_seg
-                    break 
+            if lookahead_point is not None:
+                break
+
 
         # In case we're at the end of the path and the lookahead circle misses the end
         # if lookahead_point is None:
