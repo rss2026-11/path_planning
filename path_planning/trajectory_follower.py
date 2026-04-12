@@ -129,10 +129,24 @@ class PurePursuit(Node):
                     break 
 
         # In case we're at the end of the path and the lookahead circle misses the end
+        # if lookahead_point is None:
+        #     # lookahead_point = path_pts[-1]
+        #     self.at_end = True
+        #     self.get_logger().info(f"Found end point... stopping.")
+
         if lookahead_point is None:
-            # lookahead_point = path_pts[-1]
+            lookahead_point = path_pts[-1]
+
+        # Check if we're close enough to the goal to stop
+        dist_to_goal = np.linalg.norm(car_pos - path_pts[-1])
+        if dist_to_goal < 0.5:
             self.at_end = True
-            self.get_logger().info(f"Found end point... stopping.")
+            self.get_logger().info("Reached end of trajectory, stopping.")
+            drive_msg = AckermannDriveStamped()
+            drive_msg.drive.steering_angle = 0.0
+            drive_msg.drive.speed = 0.0
+            self.drive_pub.publish(drive_msg)
+            return
 
 
         # Transform Lookahead Point to Car's Local Frame
@@ -171,6 +185,7 @@ class PurePursuit(Node):
         self.trajectory.publish_viz(duration=0.0)
 
         self.initialized_traj = True
+        self.at_end = False
 
 
 def main(args=None):
