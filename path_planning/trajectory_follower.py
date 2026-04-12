@@ -93,20 +93,14 @@ class PurePursuit(Node):
         # Find index of the absolute closest segment
         closest_idx = np.argmin(distances)
 
-<<<<<<< HEAD
         # # Find the Lookahead Point (Intersection of circle and line segment)
-=======
         # Find the Lookahead Point (Intersection of circle and line segment)
->>>>>>> 4706188fa7e25697d249d82d0c06884bcac3d795
         lookahead_point = None
         r = self.lookahead
         Q = car_pos
 
-<<<<<<< HEAD
         # # Start searching forward from the closest segment
-=======
         # Start searching forward from the closest segment
->>>>>>> 4706188fa7e25697d249d82d0c06884bcac3d795
         for i in range(closest_idx, len(path_pts) - 1):
             P1 = path_pts[i]
             P2 = path_pts[i+1]
