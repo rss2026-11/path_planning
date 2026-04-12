@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 from ackermann_msgs.msg import AckermannDriveStamped
-from geometry_msgs.msg import PoseArray
+from geometry_msgs.msg import PoseArray, Pose
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from .utils import LineTrajectory
@@ -22,9 +22,9 @@ class PurePursuit(Node):
         self.drive_topic = self.get_parameter('drive_topic').get_parameter_value().string_value
 
         # FILL IN #
-        self.lookahead = 1.0        # Lookahead distance in meters
+        self.lookahead = 0.5    # Lookahead distance in meters
         self.speed = 1.0            # Driving speed in m/s
-        self.wheelbase_length = 0.33 # Typical 1/10th scale racecar wheelbase in meters
+        self.wheelbase_length = 0.32
 
         self.initialized_traj = False
         self.trajectory = LineTrajectory(self, "/followed_trajectory")
@@ -40,6 +40,8 @@ class PurePursuit(Node):
         self.drive_pub = self.create_publisher(AckermannDriveStamped,
                                                self.drive_topic,
                                                1)
+
+        self.lookahead_pub = self.create_publisher(PoseArray, "lookahead_point", 10)
 
         self.at_end = False
 
@@ -115,12 +117,15 @@ class PurePursuit(Node):
                 sqrt_disc = math.sqrt(disc)
                 t1 = (-b + sqrt_disc) / (2 * a)
                 t2 = (-b - sqrt_disc) / (2 * a)
+                self.get_logger().info(f" sqrt disc: {sqrt_disc}")
 
                 valid_t = []
                 if 0 <= t1 <= 1:
                     valid_t.append(t1)
+                    self.get_logger().info(f" t1: {t1}")
                 if 0 <= t2 <= 1:
                     valid_t.append(t2)
+                    self.get_logger().info(f"t2: {t2}")
 
                 if valid_t:
                     # Choose the larger t so we pick the point further ahead on the segment
@@ -135,7 +140,14 @@ class PurePursuit(Node):
         if lookahead_point is None:
             if distances[closest_idx] > self.lookahead:
                 # Recover by aiming at the closest point on the path instead of ignoring it.
-                lookahead_point = projections[closest_idx]
+                dx = projections[:,0] - car_x
+                dy = projections[:,1] - car_y
+                local_x = dx * math.cos(yaw) + dy * math.sin(yaw)
+                local_y = -dx * math.sin(yaw) + dy * math.cos(yaw)
+                best_index = np.where(local_x > 0)
+                lookahead_idx = np.argmin(np.linalg.norm(projections[best_index]))
+                lookahead_point = projections[lookahead_idx]
+
             else:
                 self.at_end = True
                 self.get_logger().info(f"Found end point... stopping.")
@@ -180,6 +192,25 @@ class PurePursuit(Node):
             drive_msg.drive.speed = float(self.speed)
 
         self.drive_pub.publish(drive_msg)
+
+        pose_array = PoseArray()
+        pose_array.header.stamp = self.get_clock().now().to_msg()
+        pose_array.header.frame_id = "/map"
+
+        poses = []
+
+        pose = Pose()
+        pose.position.x = lookahead_point[0]
+        pose.position.y = lookahead_point[1]
+        pose.position.z = 0.0
+        pose.orientation.x = 0.0
+        pose.orientation.y = 0.0
+        pose.orientation.z = np.sin(steering_angle)
+        pose.orientation.w = np.cos(steering_angle)
+        poses.append(pose)
+
+        pose_array.poses = poses
+        self.lookahead_pub.publish(pose_array)
 
     def trajectory_callback(self, msg):
         self.get_logger().info(f"Receiving new trajectory {len(msg.poses)} points")
