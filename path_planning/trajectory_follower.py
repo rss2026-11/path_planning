@@ -129,33 +129,13 @@ class PurePursuit(Node):
                     valid_t.append(t1)
                 if 0 <= t2 <= 1:
                     valid_t.append(t2)
-<<<<<<< HEAD
+
 
                 if valid_t:
                     # Choose the larger t so we pick the point further ahead on the segment
                     t_intersect = max(valid_t)
                     lookahead_point = P1 + t_intersect * V_seg
                     break
-
-
-
-
-        # In case we're at the end of the path and the lookahead circle misses the end
-        if lookahead_point is None:
-            if distances[closest_idx] > self.lookahead:
-                # Recover by aiming at the closest point on the path instead of ignoring it.
-                lookahead_point = projections[closest_idx]
-            else:
-                self.at_end = True
-                self.get_logger().info(f"Found end point... stopping.")
-                lookahead_point = path_pts[-1]
-=======
-
-                if valid_t:
-                    # Choose the larger t so we pick the point further ahead on the segment
-                    t_intersect = max(valid_t)
-                    lookahead_point = P1 + t_intersect * V_seg
-                    break 
 
 
         # In case we're at the end of the path and the lookahead circle misses the end
@@ -170,7 +150,6 @@ class PurePursuit(Node):
             # pick the nearest point ahead on the path
             lookahead_point = path_pts[min(closest_idx + 1, len(path_pts)-1)]
 
->>>>>>> 4706188fa7e25697d249d82d0c06884bcac3d795
 
         # Check if we're close enough to the goal to stop
         dist_to_goal = np.linalg.norm(car_pos - path_pts[-1])
