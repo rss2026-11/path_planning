@@ -41,6 +41,6 @@ particle_filter:
     particle_filter_frame: "/base_link"
     deterministic: false
     lidar_scale_to_map_scale: 1.0
-    sigma_x: 0.3
-    sigma_y: 0.1
-    sigma_theta: 0.15
+    sigma_x: 0.04
+    sigma_y: 0.005
+    sigma_theta: 0.01
