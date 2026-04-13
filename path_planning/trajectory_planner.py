@@ -117,7 +117,7 @@ class PathPlan(Node):
             if self.dilated_map[v, u]:
                 return False
         return True
-    
+
     def resample_path(self, path, spacing=0.1):
         new_pts = [path[0]]
         dist_acc = 0.0
@@ -231,11 +231,12 @@ class PathPlan(Node):
         # Publish
         self.trajectory.clear()
         for pt in path:
+            self.get_logger().info(f"Path length: {len(path)}")
             self.trajectory.addPoint(pt)
         self.traj_pub.publish(self.trajectory.toPoseArray())
         self.trajectory.publish_viz()
 
-    
+
 
 def main(args=None):
     rclpy.init(args=args)

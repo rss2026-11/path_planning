@@ -117,15 +117,15 @@ class PurePursuit(Node):
                 sqrt_disc = math.sqrt(disc)
                 t1 = (-b + sqrt_disc) / (2 * a)
                 t2 = (-b - sqrt_disc) / (2 * a)
-                self.get_logger().info(f" sqrt disc: {sqrt_disc}")
+
 
                 valid_t = []
                 if 0 <= t1 <= 1:
                     valid_t.append(t1)
-                    self.get_logger().info(f" t1: {t1}")
+
                 if 0 <= t2 <= 1:
                     valid_t.append(t2)
-                    self.get_logger().info(f"t2: {t2}")
+
 
                 if valid_t:
                     # Choose the larger t so we pick the point further ahead on the segment
@@ -140,14 +140,14 @@ class PurePursuit(Node):
         if lookahead_point is None:
             if distances[closest_idx] > self.lookahead:
                 # Recover by aiming at the closest point on the path instead of ignoring it.
-                dx = projections[:,0] - car_x
-                dy = projections[:,1] - car_y
-                local_x = dx * math.cos(yaw) + dy * math.sin(yaw)
-                local_y = -dx * math.sin(yaw) + dy * math.cos(yaw)
-                best_index = np.where(local_x > 0)
-                lookahead_idx = np.argmin(np.linalg.norm(projections[best_index]))
-                lookahead_point = projections[lookahead_idx]
-
+                # dx = projections[:,0] - car_x
+                # dy = projections[:,1] - car_y
+                # local_x = dx * math.cos(yaw) + dy * math.sin(yaw)
+                # local_y = -dx * math.sin(yaw) + dy * math.cos(yaw)
+                # best_index = np.where(local_x > 0)
+                # lookahead_idx = np.argmin(np.linalg.norm(projections[best_index]))
+                # lookahead_point = projections[lookahead_idx]
+                lookahead_point = projections[closest_idx]
             else:
                 self.at_end = True
                 self.get_logger().info(f"Found end point... stopping.")
@@ -188,7 +188,8 @@ class PurePursuit(Node):
             drive_msg.drive.steering_angle = 0.0
             drive_msg.drive.speed = 0.0
         else:
-            drive_msg.drive.steering_angle = steering_angle
+
+            drive_msg.drive.steering_angle = max(steering_angle, 0.6)
             drive_msg.drive.speed = float(self.speed)
 
         self.drive_pub.publish(drive_msg)
