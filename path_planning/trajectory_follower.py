@@ -188,8 +188,10 @@ class PurePursuit(Node):
             drive_msg.drive.steering_angle = 0.0
             drive_msg.drive.speed = 0.0
         else:
-
-            drive_msg.drive.steering_angle = max(steering_angle, 0.6)
+            if steering_angle >= 0.6:
+              drive_msg.drive.steering_angle = 0.6
+            else:
+                drive_msg.drive.steering_angle = steering_angle
             drive_msg.drive.speed = float(self.speed)
 
         self.drive_pub.publish(drive_msg)
