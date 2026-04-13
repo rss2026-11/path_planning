@@ -231,7 +231,6 @@ class PathPlan(Node):
         # Publish
         self.trajectory.clear()
         for pt in path:
-            self.get_logger().info(f"Path length: {len(path)}")
             self.trajectory.addPoint(pt)
         self.traj_pub.publish(self.trajectory.toPoseArray())
         self.trajectory.publish_viz()
