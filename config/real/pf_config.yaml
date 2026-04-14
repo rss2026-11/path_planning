@@ -38,7 +38,7 @@ particle_filter:
     map_topic: "/map"
     scan_topic: "/scan"
     odom_topic: "/vesc/odom"
-    particle_filter_frame: "/base_link"
+    particle_filter_frame: "/base_link_pf"
     deterministic: false
     lidar_scale_to_map_scale: 1.0
     sigma_x: 0.04
