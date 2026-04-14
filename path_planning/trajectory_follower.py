@@ -4,6 +4,7 @@ import math
 
 from ackermann_msgs.msg import AckermannDriveStamped
 from geometry_msgs.msg import PoseArray, Pose
+from std_msgs.msg import Float32
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from .utils import LineTrajectory
@@ -22,7 +23,7 @@ class PurePursuit(Node):
         self.drive_topic = self.get_parameter('drive_topic').get_parameter_value().string_value
 
         # FILL IN #
-        self.lookahead = 0.5    # Lookahead distance in meters
+        self.lookahead = 1.2    # Lookahead distance in meters
         self.speed = 1.0            # Driving speed in m/s
         self.wheelbase_length = 0.32
 
@@ -40,6 +41,7 @@ class PurePursuit(Node):
         self.drive_pub = self.create_publisher(AckermannDriveStamped,
                                                self.drive_topic,
                                                1)
+        self.error_pub = self.create_publisher(Float32, "/trajectory_error", 10)
 
         self.lookahead_pub = self.create_publisher(PoseArray, "lookahead_point", 10)
 
@@ -94,6 +96,11 @@ class PurePursuit(Node):
 
         # Find index of the absolute closest segment
         closest_idx = np.argmin(distances)
+
+        # Publish distance error
+        error_msg = Float32()
+        error_msg.data = float(distances[closest_idx])
+        self.error_pub.publish(error_msg)
 
         # # Find the Lookahead Point (Intersection of circle and line segment)
         lookahead_point = None
