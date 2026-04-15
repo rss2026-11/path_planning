@@ -23,7 +23,7 @@ class PurePursuit(Node):
         self.drive_topic = self.get_parameter('drive_topic').get_parameter_value().string_value
 
         # FILL IN #
-        self.lookahead = 1.2    # Lookahead distance in meters
+        self.lookahead = 0.5    # Lookahead distance in meters
         self.speed = 1.0            # Driving speed in m/s
         self.wheelbase_length = 0.32
 

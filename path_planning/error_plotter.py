@@ -43,7 +43,7 @@ def main(args=None):
         pass
     finally:
         if len(error_plotter.errors) > 0:
-            error_plotter.get_logger().info(f'Plotting {len(error_plotter.errors)} data points...')
+            print(f'\n[Plotter]: Generating {len(error_plotter.errors)} data points...')
             
             # Matplotlib graphing
             plt.figure(figsize=(10, 6))
@@ -62,13 +62,21 @@ def main(args=None):
             plt.grid(True)
             plt.tight_layout()
             
-            # Show the graph and block until the user closes it
-            plt.show()
+            # Save the graph directly to a file (great for running on the real car without a screen!)
+            plt.savefig('tracking_error_plot.png')
+            print('[Plotter]: Success! Graph saved as tracking_error_plot.png in the current directory!')
+            
+            # Show the graph if a display is available
+            try:
+                plt.show()
+            except Exception:
+                pass
         else:
-            error_plotter.get_logger().warn('No error data was received! Did the car move?')
+            print('\n[Plotter Warning]: No error data was received! Did the car move?')
             
         error_plotter.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
