@@ -23,7 +23,7 @@ class PurePursuit(Node):
         self.drive_topic = self.get_parameter('drive_topic').get_parameter_value().string_value
 
         # FILL IN #
-        self.lookahead = 0.5    # Lookahead distance in meters
+        self.lookahead = 1.2    # Lookahead distance in meters
         self.speed = 1.0            # Driving speed in m/s
         self.wheelbase_length = 0.32
 
@@ -162,7 +162,7 @@ class PurePursuit(Node):
 
         # Check if we're close enough to the goal to stop
         dist_to_goal = np.linalg.norm(car_pos - path_pts[-1])
-        if dist_to_goal < 0.5:
+        if dist_to_goal < 0.2:
             self.at_end = True
             self.get_logger().info("Reached end of trajectory, stopping.")
             drive_msg = AckermannDriveStamped()

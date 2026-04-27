@@ -66,7 +66,7 @@ class PathPlan(Node):
         self.map = msg
         grid = np.array(msg.data, dtype=np.int8).reshape(msg.info.height, msg.info.width)
         occupied = (grid > 50) | (grid < 0)
-        radius_px = int(0.35 / msg.info.resolution)  # optimized via experiment 4
+        radius_px = int(0.50 / msg.info.resolution)  # optimized via experiment 4
         r = radius_px
         y, x = np.ogrid[-r:r+1, -r:r+1]
         struct = x**2 + y**2 <= r**2
