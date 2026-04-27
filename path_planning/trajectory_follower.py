@@ -147,17 +147,10 @@ class PurePursuit(Node):
         if lookahead_point is None:
             if distances[closest_idx] > self.lookahead:
                 # Recover by aiming at the closest point on the path instead of ignoring it.
-                # dx = projections[:,0] - car_x
-                # dy = projections[:,1] - car_y
-                # local_x = dx * math.cos(yaw) + dy * math.sin(yaw)
-                # local_y = -dx * math.sin(yaw) + dy * math.cos(yaw)
-                # best_index = np.where(local_x > 0)
-                # lookahead_idx = np.argmin(np.linalg.norm(projections[best_index]))
-                # lookahead_point = projections[lookahead_idx]
                 lookahead_point = projections[closest_idx]
             else:
-                self.at_end = True
-                self.get_logger().info(f"Found end point... stopping.")
+                # We reached the edge of the path arrays, but the car is still finishing the drive.
+                # Just lock the lookahead 'carrot' to the exact final waypoint!
                 lookahead_point = path_pts[-1]
 
         # Check if we're close enough to the goal to stop
