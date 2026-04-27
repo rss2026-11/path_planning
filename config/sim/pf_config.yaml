@@ -28,14 +28,14 @@
 #     lidar_scale_to_map_scale: 1.0
 particle_filter:
   ros__parameters:
-    num_particles: 500
+    num_particles: 200
     num_beams_per_particle: 100
     scan_field_of_view: 4.71
     scan_theta_discretization: 500.0
     map_topic: "/map"
     scan_topic: "/scan"
     odom_topic: "/odom"
-    particle_filter_frame: "/base_link"
+    particle_filter_frame: "/base_link_pf"
     deterministic: false
     lidar_scale_to_map_scale: 1.0
     sigma_x: 0.15
