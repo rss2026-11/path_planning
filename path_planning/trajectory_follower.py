@@ -23,8 +23,8 @@ class PurePursuit(Node):
         self.drive_topic = self.get_parameter('drive_topic').get_parameter_value().string_value
 
         # FILL IN #
-        self.lookahead = 1.2    # Lookahead distance in meters
-        self.speed = 1.0            # Driving speed in m/s
+        self.lookahead = 1.6    # Lookahead distance in meters (increased to counteract Particle Filter hardware lag!)
+        self.speed = 1.0        # Driving speed in m/s
         self.wheelbase_length = 0.32
 
         self.initialized_traj = False
@@ -188,8 +188,11 @@ class PurePursuit(Node):
             drive_msg.drive.steering_angle = 0.0
             drive_msg.drive.speed = 0.0
         else:
-            if steering_angle >= 0.6:
-              drive_msg.drive.steering_angle = 0.6
+            # Symmetric steering clamp to prevent aggressive mechanical oscillating jerks!
+            if steering_angle >= 0.45:
+                drive_msg.drive.steering_angle = 0.45
+            elif steering_angle <= -0.45:
+                drive_msg.drive.steering_angle = -0.45
             else:
                 drive_msg.drive.steering_angle = steering_angle
             drive_msg.drive.speed = float(self.speed)
