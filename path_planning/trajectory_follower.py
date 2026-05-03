@@ -18,12 +18,15 @@ class PurePursuit(Node):
         super().__init__("trajectory_follower")
         self.declare_parameter('odom_topic', "default")
         self.declare_parameter('drive_topic', "default")
+        self.declare_parameter('lookahead', 1.6)
+        self.declare_parameter('speed', 1.0)
+        self.declare_parameter('wheelbase_length', 0.33)
 
         self.odom_topic = self.get_parameter('odom_topic').get_parameter_value().string_value
         self.drive_topic = self.get_parameter('drive_topic').get_parameter_value().string_value
 
         # FILL IN #
-        self.lookahead = 1.6    # Lookahead distance in meters (increased to counteract Particle Filter hardware lag!)
+        self.lookahead = 1.8    # Lookahead distance in meters (increased to counteract Particle Filter hardware lag!)
         self.speed = 1.0        # Driving speed in m/s
         self.wheelbase_length = 0.32
 
