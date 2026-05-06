@@ -31,8 +31,8 @@
 #     lidar_scale_to_map_scale: 1.0
 particle_filter:
   ros__parameters:
-    num_particles: 200
-    num_beams_per_particle: 100
+    num_particles: 150
+    num_beams_per_particle: 90
     scan_field_of_view: 4.71
     scan_theta_discretization: 500.0
     map_topic: "/map"
