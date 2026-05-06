@@ -26,8 +26,8 @@ class PurePursuit(Node):
         self.drive_topic = self.get_parameter('drive_topic').get_parameter_value().string_value
 
         # FILL IN #
-        self.lookahead = 1.8    # Lookahead distance in meters (increased to counteract Particle Filter hardware lag!)
-        self.speed = 1.0        # Driving speed in m/s
+        self.lookahead = 1.2    # Lookahead distance in meters (increased to counteract Particle Filter hardware lag!)
+        self.speed = 0.5        # Driving speed in m/s
         self.wheelbase_length = 0.32
 
         self.initialized_traj = False
